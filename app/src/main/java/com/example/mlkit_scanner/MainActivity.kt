@@ -16,31 +16,26 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
-private lateinit var cameraExecutor: ExecutorService
-private lateinit var binding: ActivityMainBinding
+
 
 class MainActivity : AppCompatActivity() {
+
+    private val cameraExecutor by lazy{
+        Executors.newSingleThreadExecutor()
+    }
+    private val binding by lazy{
+        ActivityMainBinding.inflate(layoutInflater)
+    }
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-
-        cameraExecutor = Executors.newSingleThreadExecutor()
         checkCameraPermission()
-
     }
 
 
-    override fun onDestroy() {
-        super.onDestroy()
-        cameraExecutor.shutdown()
-    }
-
-
-    /**
-     * 1. This function is responsible to request the required CAMERA permission
-     */
     private fun checkCameraPermission() {
         try {
             val requiredPermissions = arrayOf(Manifest.permission.CAMERA)
@@ -50,13 +45,12 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * 2. This function will check if the CAMERA permission has been granted.
-     * If so, it will call the function responsible to initialize the camera preview.
-     * Otherwise, it will raise an alert.
-     */
     private fun checkIfCameraPermissionIsGranted() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.CAMERA
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
             // Permission granted: start the preview
             startCamera()
         } else {
@@ -77,9 +71,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * 3. This function is executed once the user has granted or denied the missing permission
-     */
+
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
@@ -89,18 +81,13 @@ class MainActivity : AppCompatActivity() {
         checkIfCameraPermissionIsGranted()
     }
 
-
-
-    /**
-     * This function is responsible for the setup of the camera preview and the image analyzer.
-     */
     private fun startCamera() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
 
         cameraProviderFuture.addListener({
             val cameraProvider = cameraProviderFuture.get()
 
-            Log.d("alan","StartCamera")
+            Log.d("alan", "StartCamera")
             // Preview
             val preview = Preview.Builder()
                 .build()
@@ -113,7 +100,14 @@ class MainActivity : AppCompatActivity() {
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build()
                 .also {
-                    it.setAnalyzer(cameraExecutor, QrCodeAnalyzer(this))
+                    it.setAnalyzer(
+                        cameraExecutor, QrCodeAnalyzer(
+                            this,
+                            BarcodeBoxView(this),
+                            binding.previewView.width.toFloat(),
+                            binding.previewView.height.toFloat()
+                        )
+                    )
                 }
 
             // Select back camera as a default
@@ -132,6 +126,12 @@ class MainActivity : AppCompatActivity() {
                 exc.printStackTrace()
             }
         }, ContextCompat.getMainExecutor(this))
+    }
+
+
+    override fun onDestroy() {
+        super.onDestroy()
+        cameraExecutor.shutdown()
     }
 
 }
