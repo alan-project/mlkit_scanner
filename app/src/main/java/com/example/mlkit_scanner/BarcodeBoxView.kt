@@ -43,9 +43,8 @@ class BarcodeBoxView(context:Context): View(context) {
 
     fun setRect(rect: RectF) {
         mRect = rect
-//        mRect = RectF(100F,100F,100F,100F)
-        requestLayout()
         invalidate()
+        requestLayout()
         Log.d(
             "alan",
             "Left: ${rect.left}, Right: ${rect.right}, Top: ${rect.top}, Bottom: ${rect.bottom}"
